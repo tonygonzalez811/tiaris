@@ -132,10 +132,9 @@ Calendario
         z-index: 999;
     }
 
-    .grouped-event > small {
+    .grouped-event .divider {
         border-top: 1px solid #0fa8ad;
         width: 25%;
-        display: inline-block;
     }
 
     .btn-toolbar-small {
@@ -147,6 +146,10 @@ Calendario
     }
     h4.text-muted.error {
         color: #f00 !important;
+    }
+
+    .list-group.main .list-group-item {
+        padding: 4px;
     }
 </style>
 @stop
@@ -200,6 +203,20 @@ Calendario
                 @endif
 
                 <div id="filter_holder">
+                    <!-- modalidades -->
+                    {{ $frm->accordionOpen('filter_mode_accordion') }}
+                        {{ $frm->accordionItemOpen(Lang::get('modalidad.title_single')) }}
+                            <div class="list-group">
+                                @foreach ($modalidades as $id => $nombre)
+                                    <a href="#" class="list-group-item group-filter filter-mode" attr-id="{{ $id }}">
+                                        {{ $nombre }}
+                                        <span class="badge hidden">0</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        {{ $frm->accordionItemClose() }}
+                    {{ $frm->accordionClose() }}
+
                     <!-- estados -->
                     {{ $frm->accordionOpen('filter_state_accordion') }}
                         {{ $frm->accordionItemOpen(Lang::get('citas.state')) }}
@@ -220,6 +237,34 @@ Calendario
                             <div class="list-group">
                                 @foreach ($equipos as $id => $nombre)
                                     <a href="#" class="list-group-item group-filter filter-equipment" attr-id="{{ $id }}">
+                                        {{ $nombre }}
+                                        <span class="badge hidden">0</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        {{ $frm->accordionItemClose() }}
+                    {{ $frm->accordionClose() }}
+
+                    <!-- doctores -->
+                    {{ $frm->accordionOpen('filter_doctor_accordion') }}
+                        {{ $frm->accordionItemOpen(Lang::get('citas.doctor')) }}
+                            <div class="list-group">
+                                @foreach ($doctores as $id => $nombre)
+                                    <a href="#" class="list-group-item group-filter filter-doctor" attr-id="{{ $id }}">
+                                        {{ $nombre }}
+                                        <span class="badge hidden">0</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        {{ $frm->accordionItemClose() }}
+                    {{ $frm->accordionClose() }}
+
+                    <!-- tecnicos -->
+                    {{ $frm->accordionOpen('filter_technician_accordion') }}
+                        {{ $frm->accordionItemOpen(Lang::get('citas.technician')) }}
+                            <div class="list-group">
+                                @foreach ($tecnicos as $id => $nombre)
+                                    <a href="#" class="list-group-item group-filter filter-technician" attr-id="{{ $id }}">
                                         {{ $nombre }}
                                         <span class="badge hidden">0</span>
                                     </a>
@@ -248,7 +293,7 @@ Calendario
 {{ $frm->modalOpen('new_event_form', Lang::get('citas.new_event')) }}
    <form id="frm_data_new_event" class="form-horizontal" role="form" method="post" autocomplete="off" action="{{ URL::route('admin_citas_registrar_post') }}">
         <input type="hidden" name="id" id="cita_id" value="0">
-        <div class="list-group">
+        <div class="list-group main">
             <!-- date & time -->
             <a href="#" class="list-group-item" data-toggle="modal" data-target="#new_event_date_time_modal">
                 <div class="row form-item datetime">
@@ -306,7 +351,7 @@ Calendario
                                 {{ $frm->hidden('tecnico_id', 'tecnico_id_hidden') }}
                             </div>
                             <div class="col-sm-2 hidden-xs">
-                                <img class="avatar-thumb" id="cita_doctor_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
+                                <img class="avatar-thumb" id="cita_technician_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
                             </div>
                         </div>
                     </div>
@@ -357,6 +402,23 @@ Calendario
                         <h4 class="list-group-item-heading text-muted" id="cita_equipment_name" data-select_lbl="{{ Lang::get('citas.select_equipment') }}">{{ Lang::get('citas.select_equipment') }}</h4>
                         <p class="list-group-item-text" id="cita_equipment_inf"></p>
                         {{ $frm->hidden('equipo_id', 'equipo_id_hidden') }}
+                    </div>
+                </div>
+            </a>
+
+            <!-- office -->
+            <a href="#" id="open_offices_modal" class="list-group-item" data-toggle="modal" data-target="#new_event_office_modal">
+                <div class="row form-item">
+                    <div class="col-sm-2 col-xs-2">
+                        <div class="status-icon" id="icon_office">
+                            <!--i class="fa fa-4x fa-cube"></i-->
+                            <figure class="icon door"></figure>
+                        </div>
+                    </div>
+                    <div class="col-sm-10 col-xs-10">
+                        <h4 class="list-group-item-heading text-muted" id="cita_office_name" data-select_lbl="{{ Lang::get('citas.select_office') }}">{{ Lang::get('citas.select_office') }}</h4>
+                        <p class="list-group-item-text" id="cita_office_inf"></p>
+                        {{ $frm->hidden('consultorio_id', 'consultorio_id_hidden') }}
                     </div>
                 </div>
             </a>
@@ -415,7 +477,7 @@ EOT;
     <!-- NEW TECHNICIAN FORM -->
     {{ $frm->modalOpen('new_event_technician_modal', Lang::get('citas.set') . ' ' . Lang::get('usuarios.tecnico')) }}
         <form id="frm_new_event_technician_inf" class="form-horizontal" role="form" method="get" autocomplete="off" action="{{ URL::route('cita_technician_inf_get') }}">
-            {{ $frm->remoteSelect('tecnico_id', null, Lang::get('citas.tecnico'), URL::route('admin_tecnicos_list')) }}
+            {{ $frm->remoteSelect('tecnico_id', null, Lang::get('citas.technician'), URL::route('admin_tecnicos_list')) }}
         </form>
         <div id="technicians_by_letter_holder"></div>
     {{ $frm->modalClose() }}
@@ -488,17 +550,28 @@ EOT;
     {{ $frm->modalOpen('new_event_equipment_modal', Lang::get('citas.set') . ' ' . Lang::get('equipo.title_single')) }}
         <form id="frm_new_event_equipment_inf" class="form-horizontal" role="form" method="get" autocomplete="off" action="{{ URL::route('cita_equipment_inf_get') }}">
             @if (Auth::user()->admin)
-            {{ $frm->remoteSelect('equipo_id_select', null, Lang::get('equipo.title_single'), URL::route('admin_equipos_list')) }}
+            {{ $frm->remoteSelect('equipo_id', null, Lang::get('equipo.title_single'), URL::route('admin_equipos_list')) }}
             @endif
-            <input type="hidden" name="equipo_id">
         </form>
         <div id="available_equipments_holder"></div>
     {{ $frm->modalClose(Auth::user()->admin ? null : false) }}
     <!-- /NEW EQUIPMENT FORM -->
 
+    <!-- NEW OFFICE FORM -->
+    {{ $frm->modalOpen('new_event_office_modal', Lang::get('citas.set') . ' ' . Lang::get('consultorio.title_single')) }}
+        <form id="frm_new_event_office_inf" class="form-horizontal" role="form" method="get" autocomplete="off" action="{{ URL::route('cita_office_inf_get') }}">
+            @if (Auth::user()->admin)
+            {{ $frm->remoteSelect('consultorio_id', null, Lang::get('consultorio.title_single'), URL::route('admin_consultorios_list')) }}
+            @endif
+        </form>
+        <div id="available_offices_holder"></div>
+    {{ $frm->modalClose(Auth::user()->admin ? null : false) }}
+    <!-- /NEW OFFICE FORM -->
+
 <!-- ACTIONS FORM -->
 <?php
     $doctor_lbl = Lang::get('citas.doctor');
+    $technician_lbl = Lang::get('citas.technician');
     $header = <<<EOT
     <div class="cita-info text-muted">
         <div class="pull-left">
@@ -509,12 +582,22 @@ EOT;
             <span class="servicio"></span>
         </div>
         <div class="clearfix"></div>
+
         <div class="pull-left">
             &nbsp;&nbsp;&nbsp;&nbsp;
             {$doctor_lbl}: <span class="doctor"></span>
         </div>
         <div class="pull-right">
             <span class="paciente"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+        </div>
+        <div class="clearfix"></div>
+
+        <div class="pull-left">
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            {$technician_lbl}: <span class="tecnico"></span>
+        </div>
+        <div class="pull-right">
+            <span class="oficina"></span>&nbsp;&nbsp;&nbsp;&nbsp;
         </div>
         <div class="clearfix"></div>
     </div>
@@ -763,6 +846,10 @@ EOT;
 
     function fn_drop_event(event) {
         console.log(event);
+        if (event.end == null) {
+            $main_calendar.fullCalendar('refetchEvents');
+            return false;
+        }
         var $frm = $('#frm_data_move');
         //setting id
         $frm.find('.record-id').val( event['id'] );
@@ -836,7 +923,7 @@ EOT;
             var total = window['total_' + name + id];
             var color = window['color_' + name + id];
             if (total > 0 && id >= 0) {
-                if (name == 'doctor') {
+                if (name == 'mode') {
                     $o.find('span.badge').html(total).css('background-color', color).css('color', '#fff').removeClass('hidden');
                 }
                 else {
@@ -844,15 +931,20 @@ EOT;
                 }
             }
             else {
-                $o.find('span.badge').addClass('hidden');
+                if (name == 'state') {
+                    $o.find('span.badge').addClass('hidden');
+                }
+                else {
+                    $o.find('span.badge').parent().addClass('hidden');
+                }
             }
         });
     }
 
     function updateCountAfterFilter() {
-        setTimeout(function() {
+        /*setTimeout(function() {
             updateCountPer('doctor');
-        }, 500);
+        }, 500);*/
     }
 
     function countTotalCitas() {
@@ -884,11 +976,17 @@ EOT;
                 }, 1000);
             }
             
+            updateCountPer('mode');
+            highlightActive('mode');
+
             updateCountPer('state');
             highlightActive('state');
 
             updateCountPer('equipment');
             highlightActive('equipment');
+
+            updateCountPer('technician');
+            highlightActive('technician');
             
             bindEventClick();
     		$('.tip').tooltip();
@@ -943,7 +1041,7 @@ EOT;
         $('#cita_technician_name').html( data['technician_name_inf'] ).removeClass('text-muted');
         $('#cita_technician_avatar').attr('src', data['avatar_inf_technician']);
 
-        $('#technician_id_hidden').val( data['doctor_id'] );
+        $('#tecnico_id_hidden').val( data['tecnico_id'] );
     }
 
     function submitPatientFormDone($frm, data) {
@@ -975,18 +1073,25 @@ EOT;
         }
     }
 
-    function submitServiceFormDone($frm, data, autoload_equipment) {
+    function submitServiceFormDone($frm, data, autoload_equipment, autoload_office) {
         autoload_equipment = typeof autoload_equipment == 'boolean' ? autoload_equipment : true;
+        autoload_office = typeof autoload_office == 'boolean' ? autoload_office : true;
         $('#cita_service_name').html( data['service_name_inf'] ).removeClass('text-muted');
         $('#cita_service_inf').html( data['duration_inf'] );
 
         $('#servicio_id_hidden').val( data['servicio_id'] );
 
-        if (typeof autoload_equipment != 'boolean' || autoload_equipment) {
+        if (autoload_equipment) {
             $('#cita_equipment_name').html( '{{ Lang::get('global.loading') }}' ).removeClass('error').addClass('text-muted');
             $('#equipo_id_hidden').val('');
+
+            $('#cita_office_name').html( '{{ Lang::get('global.loading') }}' ).removeClass('error').addClass('text-muted');
+            $('#consultorio_id_hidden').val('');
         }
-        getAvailableEquipments( data['servicio_id'], $('#fecha_hidden').val(), $('#inicio_hidden').val(), autoload_equipment );
+        var fecha = $('#fecha_hidden').val();
+        var inicio = $('#inicio_hidden').val();
+        getAvailableEquipments( data['servicio_id'], fecha, inicio, autoload_equipment );
+        getAvailableOffices( data['servicio_id'], fecha, inicio, autoload_office );
     }
 
     function submitEquipmentFormDone($frm, data) {
@@ -994,6 +1099,13 @@ EOT;
         $('#cita_equipment_inf').html('');
 
         $('#equipo_id_hidden').val( data['equipo_id'] );
+    }
+
+    function submitOfficeFormDone($frm, data) {
+        $('#cita_office_name').html( data['office_name_inf'] ).removeClass('text-muted error');
+        $('#cita_office_inf').html('');
+
+        $('#consultorio_id_hidden').val( data['consultorio_id'] );
     }
 
     function submitNoteFormDone($frm, data) {
@@ -1037,7 +1149,7 @@ EOT;
             var $warning_key = $('#warning_key');
             if (data['bad']) {
                 $('#icon_' + data['bad']).addClass('bad');
-                if ($ignore_options.length) {
+                if ($ignore_options.length && (typeof data['allow_ignore'] == 'undefined' || data['allow_ignore'] != 0)) {
                     $ignore_options.removeClass('hidden');
                     $warning_key.val( data['warning_key'] );
                 }
@@ -1074,12 +1186,37 @@ EOT;
         }
     }
 
+    function selectOffice(id, msg) {
+        var $frm = $('#frm_new_event_office_inf');
+        $frm.find('input[name=consultorio_id]').val(id);
+        if (id > 0) {
+            submitForm($frm, submitOfficeFormDone, null, 'GET');
+        }
+        else {
+            var exclamation = '<span class="pull-right"><i class="fa fa-exclamation-triangle"></i></span>';
+            $('#cita_office_name').html( exclamation + (typeof msg == 'string' ? msg : '') ).addClass('text-muted error');
+            $('#cita_office_inf').html('');
+            $('#consultorio_id_hidden').val('');
+        }
+    }
+
     function bindEquipmentButtons() {
         $('.equipment-btn').click(function() {
             var $btn = $(this);
             var id = parseInt($btn.attr('attr-id')) || 0;
             if (id > 0) {
                 selectEquipment(id);
+                $btn.closest('.modal').modal('hide');
+            }
+        });
+    }
+
+    function bindOfficesButtons() {
+        $('.office-btn').click(function() {
+            var $btn = $(this);
+            var id = parseInt($btn.attr('attr-id')) || 0;
+            if (id > 0) {
+                selectOffice(id);
                 $btn.closest('.modal').modal('hide');
             }
         });
@@ -1112,6 +1249,52 @@ EOT;
                         if (typeof data['available'] != 'undefined') {
                             selectEquipment( data['available'], data['msg'] );
                         }
+                        else {
+                            var $lbl = $('#cita_equipment_name');
+                            $lbl.html( $lbl.attr('data-select_lbl') );
+                        }
+                    }
+                }
+                else {
+                    $holder.html('');
+                }
+            }).fail(function(data) {
+                console.log(data); //failed
+            });
+        }
+    }
+
+    function getAvailableOffices(service_id, cdate, start, autoselect) {
+        var $holder = $('#available_offices_holder');
+        if ((parseInt(service_id) || 0) > 0) {
+            $.ajax({
+                type: 'GET',
+                url: '{{ URL::route('get_available_offices') }}',
+                dataType: 'json',
+                data: { servicio_id: service_id, fecha: cdate, inicio: start, ignore_cita_id: $('#frm_data_new_event').find('#cita_id').val() }
+            }).done(function(data) {
+                console.log(data);
+                if (data['ok']) {
+                    $holder.html( data['btns_list'] );
+                    if ($('.office-btn').length == 0) {
+                        if (parseInt($('#servicio_id_hidden').val()) > 0) {
+                            $holder.html('<p class="text-center">{{ Lang::get('servicio.no_offices_attached_to_service') }}</p>');
+                        }
+                        else {
+                            $holder.html('<p class="text-center">{{ Lang::get('servicio.no_offices_select_service_first') }}</p>');
+                        }
+                    }
+                    else {
+                        bindOfficesButtons();
+                    }
+                    if (typeof autoselect == 'boolean' && autoselect) {
+                        if (typeof data['available'] != 'undefined') {
+                            selectOffice( data['available'], data['msg'] );
+                        }
+                        else {
+                            var $lbl = $('#cita_office_name');
+                            $lbl.html( $lbl.attr('data-select_lbl') );
+                        }
                     }
                 }
                 else {
@@ -1130,7 +1313,7 @@ EOT;
         }
         else {
             setTimeout(function() {
-                $('a.group-filter').not('.filter-' + name).not('.filter-doctor').removeClass('active');
+                $('a.group-filter').not('.filter-' + name)/*.not('.filter-doctor')*/.removeClass('active');
                 $('a.fc-event').addClass('event-faded');
                 $.each($actives, function(i, o) {
                     var $o = $(o);
@@ -1140,7 +1323,7 @@ EOT;
                         if ($e.find('input.' + name + '_id').val() == $o.attr('attr-id') || ($e.hasClass('has-many') && $e.find('.grouped-event.' + name + $o.attr('attr-id')).length > 0)) {
                             $e.removeClass('event-faded');
                             if ($actives.length == 1) {
-                                if (name == 'doctor') {
+                                if (name == 'doctor' || name == 'equipment' || name == 'office') {
                                     $e.addClass('wide');
                                 }
                                 else {
@@ -1154,16 +1337,10 @@ EOT;
                     });
                 });
             }, 100);
-            /*$('a.fc-event.event-faded').mouseenter(function() {
-                $(this).hide();
-            });*/
         }
     }
 
     function removeActive() {
-        /*$('a.filter-doctor').removeClass('active');
-        $('a.filter-office').removeClass('active');
-        $('a.filter-state').removeClass('active');*/
         $('a.group-filter').removeClass('active');
     }
 
@@ -1383,6 +1560,8 @@ EOT;
         $inf.find('.hora').html( data['range'] );
         $inf.find('.paciente').html( data['patient'] );
         $inf.find('.doctor').html( data['doctor'] );
+        $inf.find('.tecnico').html( data['technician'] );
+        $inf.find('.oficina').html( data['office'] );
         $inf.find('.servicio').html( data['service'] + (data['equipment'].length ? (' (' + data['equipment'] + ')') : '') );
     }
 
@@ -1528,11 +1707,12 @@ EOT;
         $frm.find('.form-item').not('.datetime').not('.patient').find('p').html('');
         $frm.find('.form-item').not('.datetime').not('.patient').find('input').val('');
         $frm.find('#cita_doctor_avatar').attr('src', '{{ URL::asset('img/avatars/s/default.jpg') }}');
+        $frm.find('#cita_technician_avatar').attr('src', '{{ URL::asset('img/avatars/s/default.jpg') }}');
         $frm.find('.status-icon').removeClass('bad');
 
         if (clear_patient) {
             var $p = $frm.find('#cita_patient_name');
-            $p.html( $p.attr('data-select_lbl') );
+            $p.addClass('text-muted').html( $p.attr('data-select_lbl') );
             $frm.find('.form-item.patient').find('p').html('');
             $frm.find('.form-item.patient').find('input').val('');
             $('#persona_id').val('').select2('data', null);
@@ -1725,7 +1905,9 @@ EOT;
             //lazyFetching: false,
             firstDay: 1,
             weekends: true,
-            allDaySlot: false,
+            allDaySlot: true,
+            allDayHtml: '',
+            allDayText: '',
             defaultView: '{{ Cookie::get('calendar_view', 'agendaWeek') }}',
             defaultDate: '{{ Cookie::get('calendar_day', date('Y-m-d')) }}',
             timeFormat: 'h(:mm)t',
@@ -1748,6 +1930,9 @@ EOT;
                 if (typeof fn_new_event == 'function') {
                     fn_new_event(start, end, allDay);
                 }
+            },
+            eventDragStart: function( event, jsEvent, ui, view ) {
+
             },
             eventDrop: function( event, delta, revertFunc, jsEvent, ui, view ) {
                 if (typeof fn_drop_event == 'function') {
@@ -1901,6 +2086,14 @@ EOT;
             $modal.modal('hide');
         });
 
+        // getting technician inf
+        $('#new_event_technician_modal').find('button.modal-btn-ok').click(function() {
+            var $modal = $(this).closest('.modal');
+            var $form = $modal.find('form').eq(0);
+            submitForm( $form, submitTechnicianFormDone, null, 'GET' );
+            $modal.modal('hide');
+        });
+
         // getting patient inf
         $('#new_event_patient_modal').find('button.modal-btn-ok').click(function() {
             var persona_id = parseInt($('#persona_id').val()) || 0;
@@ -1962,6 +2155,14 @@ EOT;
             $form.closest('.modal').modal('hide');
             e.preventDefault();
             return false;
+        });
+
+        // getting office inf
+        $('#new_event_office_modal').find('button.modal-btn-ok').click(function() {
+            var $modal = $(this).closest('.modal');
+            var $form = $modal.find('form').eq(0);
+            submitForm( $form, submitOfficeFormDone, null, 'GET' );
+            $modal.modal('hide');
         });
 
         // saving note
@@ -2037,8 +2238,9 @@ EOT;
                 submitDoctorFormDone($frm, data);
                 submitTechnicianFormDone($frm, data);
                 submitPatientFormDone($frm, data);
-                submitServiceFormDone($frm, data, false);
+                submitServiceFormDone($frm, data, false, false);
                 submitEquipmentFormDone($frm, data);
+                submitOfficeFormDone($frm, data);
                 $modal.modal('show');
 
                 $btn.closest('.modal').modal('hide');
@@ -2148,9 +2350,9 @@ EOT;
 
             //$a.toggleClass('active').siblings().removeClass('active');
 
-            $.ajax({
+            /*$.ajax({
                 type: 'POST',
-                url: '{{ URL::route('set_active_doctor') }}',
+                url: '{{-- URL::route('set_active_doctor') --}}',
                 data: { 'user_id' : $('a.filter-doctor.active').attr('attr-id') || 0 }
             }).done(function() {
                 if (view == 'agendaWeek' || view == 'agendaDay') {
@@ -2158,9 +2360,30 @@ EOT;
                 }
                 $('.fc-event').remove();
                 $main_calendar.fullCalendar('refetchEvents');
-            });
+            });*/
 
-            //highlightActive('doctor');
+            $a.siblings().removeClass('active');
+            highlightActive('doctor');
+            e.preventDefault();
+            return false;
+        });
+
+        $('a.filter-technician').click(function(e) {
+            var $a = $(this);
+            var id = $a.attr('attr-id');
+            $a.toggleClass('active').siblings().removeClass('active');
+            highlightActive('technician');
+            updateCountAfterFilter();
+            e.preventDefault();
+            return false;
+        });
+
+        $('a.filter-mode').click(function(e) {
+            var $a = $(this);
+            var id = $a.attr('attr-id');
+            $a.toggleClass('active').siblings().removeClass('active');
+            highlightActive('mode');
+            updateCountAfterFilter();
             e.preventDefault();
             return false;
         });

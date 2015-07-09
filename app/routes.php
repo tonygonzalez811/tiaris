@@ -388,6 +388,11 @@ Route::group(array('before' => 'auth'), function() {
         'uses' => 'CitaController@getInfoEquipment'
     ));
 
+    Route::get('cita/consultorio', array(
+        'as' => 'cita_office_inf_get',
+        'uses' => 'CitaController@getInfoOffice'
+    ));
+
     Route::get('cita/info', array(
         'as' => 'cita_all_inf_get',
         'uses' => 'CitaController@getAllInfo'
@@ -396,6 +401,11 @@ Route::group(array('before' => 'auth'), function() {
     Route::get('cita/equipo_disponible', array(
         'as' => 'get_available_equipments',
         'uses' => 'CitaController@getAvailableEquipment'
+    ));
+
+    Route::get('cita/consultorio_disponible', array(
+        'as' => 'get_available_offices',
+        'uses' => 'CitaController@getAvailableOffices'
     ));
 
     Route::get('cita/nota_id', array(

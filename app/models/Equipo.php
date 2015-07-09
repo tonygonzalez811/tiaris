@@ -66,7 +66,7 @@ class Equipo extends Eloquent {
     }
 
     public function servicios() {
-        return $this->belongsToMany('Servicio', 'servicio_equipo', 'equipo_id', 'servicio_id');
+        return $this->belongsToMany('Servicio', 'disposicion', 'equipo_id', 'servicio_id');
     }
 
 

@@ -127,6 +127,7 @@ class ServicioController extends BaseController {
             //creates combinations for dispositions. A LOT OF PROCESSING IS REQUIRED!!!!!!
             $items = array();
             $n = 0;
+            $added = false;
             foreach ($equipos as $equipo) {
                 foreach ($doctores as $doctor) {
                     foreach ($tecnicos as $tecnico) {
@@ -144,6 +145,7 @@ class ServicioController extends BaseController {
                                     if ($n >= 100) { //inserts every 100 items
                                         $n = 0;
                                         Disposicion::insert($items);
+                                        $added = true;
                                         $items = array();
                                         sleep(1); //<-- don't want to kill the DB server
                                     }
@@ -155,8 +157,15 @@ class ServicioController extends BaseController {
             }
             if (count($items)) {
                 Disposicion::insert($items);
+                $added = true;
             }
 
+            if (!$added) {
+                $data = array(
+                    'servicio_id' => $item->id
+                );
+                Disposicion::create($data);
+            }
 
             /*if (is_array($equipos)) {
                 $existing = Disposicion::where('servicio_id', '=', $item->id)->get();
@@ -359,11 +368,11 @@ EOT;
                         foreach ($items as $horario) {
                             $horarios[] = $this->htmlTimeLabel(null, $horario->inicio, $horario->fin);
                         }
-                        $time = '<br>' . implode('<br>', $horarios);
+                        $time = '<br>' . implode(', ', $horarios);
                     }
                 }
                 $html.= <<<EOT
-                <a class="list-group-item search-result" data-id="{$item->servicio_id}">{$nombre}{$duracion}{$time}</a>
+                <a class="list-group-item search-result" data-id="{$item->servicio_id}"><b>{$nombre}</b>{$duracion}<small>{$time}</small></a>
 EOT;
                 $last_service = $item->servicio_id;
             }

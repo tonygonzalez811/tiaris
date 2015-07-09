@@ -9130,6 +9130,7 @@ figure.icon {
     height: 52px;
     background: transparent no-repeat center center;
     background-size: contain;
+    opacity: .7;
 }
 
 figure.icon.door {

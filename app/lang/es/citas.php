@@ -8,9 +8,10 @@ return array(
     'time_end' => 'Hora fin',
     'state' => 'Estado',
     'doctor' => 'Doctor',
+    'technician' => 'Técnico',
     'patient' => 'Paciente',
     'service' => 'Servicio',
-    'office' => 'Cabina',
+    'office' => 'Consultorio',
     'record_date' => 'Fecha de registro',
     'record_date_alt' => 'Registrado el',
     'goto' => 'Ir a...',
@@ -56,6 +57,7 @@ return array(
     'select_patient' => '(Paciente)',
     'select_service' => '(Servicio)',
     'select_equipment' => '(Equipo)',
+    'select_office' => '(Consultorio)',
 
     'no_time' => 'Sin hora definida',
     'passed_time' => 'Fecha pasada',
@@ -74,6 +76,7 @@ return array(
     'not_yet_started' => 'Esta acción debe realizarse posterior a la fecha y hora de la cita',
 
     //errors
+    'patient_required' => 'Debe especificar el paciente',
     'time_mismatch' => 'El intervalo de tiempo elegido es inválido',
     'overlap_doctor' => 'El doctor ya tiene una cita registrada durante el intervalo seleccionado',
     'overlap_technician' => 'El técnico ya tiene una cita registrada durante el intervalo seleccionado',
@@ -81,5 +84,7 @@ return array(
     'unavailable_service' => 'El servicio no está disponible para la hora y fecha seleccionada',
     'overlap_equipment' => 'No hay un equipo disponible para realizar el servicio seleccionado',
     'overlap_patient' => 'El paciente ya tiene una cita registrada en la hora seleccionada',
+    'overlap_office' => 'El consultorio ya tiene una cita registrada en la hora seleccionada',
+    'no_offices' => 'No hay un consultorio disponible para realizar el servicio seleccionado',
     'drag_collapse' => 'La cita no se puede mover a la fecha y hora especificada',
 );

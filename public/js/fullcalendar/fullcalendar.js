@@ -4671,6 +4671,7 @@ DayGrid.mixin({
         var doctor_id = event.doctor_id;
         var doctor_name = event.doctor_name;
         var doctor_color = event.doctor_color;
+        var technician_id = event.technician_id;
         var patient_id = event.patient_id;
         var service_id = event.service_id;
         var equipment_id = event.equipment_id;
@@ -4682,6 +4683,8 @@ DayGrid.mixin({
 		var has_comment = (typeof comment == 'string' && comment.length);
 		var comment_icon = has_comment ? '&nbsp;<i class="fa fa-comment"></i>' : '';
 		var is_cita = !(event.cita === 0);
+        var mode_id = event.mode_id;
+        var mode = event.mode;
 
         classes.unshift('fc-day-grid-event');
 
@@ -4726,12 +4729,14 @@ DayGrid.mixin({
 						) +
                         '<input type="hidden" class="id" value="' + id + '">' +
                         '<input type="hidden" class="doctor_id" value="' + doctor_id + '">' +
+                        '<input type="hidden" class="technician_id" value="' + technician_id + '">' +
                         '<input type="hidden" class="patient_id" value="' + patient_id + '">' +
                         '<input type="hidden" class="service_id" value="' + service_id + '">' +
                         '<input type="hidden" class="equipment_id" value="' + equipment_id + '">' +
                         '<input type="hidden" class="office_id" value="' + office_id + '">' +
                         '<input type="hidden" class="state_id" value="' + state + '">' +
                         '<input type="hidden" class="doctor_color" value="' + doctor_color + '">' +
+                        '<input type="hidden" class="mode_id" value="' + mode_id + '">' +
 				'</div>' +
 				(isResizable ?
 					'<div class="fc-resizer"/>' :
@@ -5896,6 +5901,7 @@ TimeGrid.mixin({
         var doctor_id = event.doctor_id;
         var doctor_name = event.doctor_name;
         var doctor_color = event.doctor_color;
+        var technician_id = event.technician_id;
         var patient_id = event.patient_id;
         var service_id = event.service_id;
         var equipment_id = event.equipment_id;
@@ -5908,6 +5914,8 @@ TimeGrid.mixin({
 		var has_comment = (typeof comment == 'string' && comment.length);
 		var comment_icon = has_comment ? '&nbsp;<i class="fa fa-comment"></i>' : '';
 		var is_cita = !(event.cita === 0);
+        var mode_id = event.mode_id;
+        var mode = event.mode;
 
         classes.unshift('fc-time-grid-event');
 
@@ -5957,7 +5965,7 @@ TimeGrid.mixin({
 						' data-start="' + htmlEscape(startTimeText) + '"' +
 						' data-full="' + htmlEscape(fullTimeText) + '"' +
 						'>' +
-							'<span>' + htmlEscape(timeText) + (typeof doctor_name != 'undefined' ? (' <span class="badge" style="background-color:' + doctor_color + '">' + doctor_name + '</span>'):'') + comment_icon + atention + '</span>' +
+							'<span>' + htmlEscape(timeText) + (typeof doctor_name != 'undefined' ? (' <span class="badge" style="background-color:' + doctor_color + '">' + mode + '</span>'):'') + comment_icon + atention + '</span>' +
 						'</div>' :
 						''
 						) +
@@ -5969,12 +5977,14 @@ TimeGrid.mixin({
 						) +
                     '<input type="hidden" class="id" value="' + id + '">' +
                     '<input type="hidden" class="doctor_id" value="' + doctor_id + '">' +
+                    '<input type="hidden" class="technician_id" value="' + technician_id + '">' +
                     '<input type="hidden" class="patient_id" value="' + patient_id + '">' +
                     '<input type="hidden" class="service_id" value="' + service_id + '">' +
                     '<input type="hidden" class="equipment_id" value="' + equipment_id + '">' +
                     '<input type="hidden" class="office_id" value="' + office_id + '">' +
                     '<input type="hidden" class="state_id" value="' + state + '">' +
                     '<input type="hidden" class="doctor_color" value="' + doctor_color + '">' +
+                    '<input type="hidden" class="mode_id" value="' + mode_id + '">' +
 				'</div>' +
 				'<div class="fc-bg"/>' +
 				(isResizable ?

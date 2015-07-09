@@ -18,6 +18,8 @@ class CitaController extends BaseController {
 
     private $counter = 0;
 
+    private $disposicion = null;
+
     /** Navegacion **/
 
     /**
@@ -52,6 +54,8 @@ class CitaController extends BaseController {
         $genders = Functions::langArray('pacientes', Persona::getGenders());
         $marital_statuses = Functions::langArray('pacientes', Persona::getMaritalStatuses());
         $modalidades = Modalidad::getAllInUse();
+        $doctores = DB::table('vw_doctor')->where('nombre', '<>', '')->lists('nombre', 'id');
+        $tecnicos = DB::table('vw_tecnico')->where('nombre', '<>', '')->lists('nombre', 'id');
         $options = Opcion::load();
         return View::make('admin.calendario')->with(
             array(
@@ -61,6 +65,8 @@ class CitaController extends BaseController {
                 'genders' => $genders,
                 'marital_statuses' => $marital_statuses,
                 'modalidades' => $modalidades,
+                'doctores' => $doctores,
+                'tecnicos' => $tecnicos,
                 'options' => $options,
                 'read_only' => !User::canAddCitas()
             )
@@ -115,6 +121,7 @@ class CitaController extends BaseController {
             }
 
             $disposicion_id = $missing['disposicion_id'];
+            $servicio_id = false;
         }
         else {
             $is_dragging = false;
@@ -124,21 +131,30 @@ class CitaController extends BaseController {
                 $this->setError(Lang::get('citas.overlap_equipment'));
                 return false;
             }
+            $servicio_id = (int)$inputs['servicio_id'];
             Input::merge(array('disposicion_id' => $disposicion_id));
         }
 
 		Session::set('input_fecha', Input::get('fecha'));
 
+        //check patient
+        $patient_id = Input::get('persona_id');
+        if (empty($patient_id) && !$is_dragging) {
+            $this->setReturn('bad', 'patient');
+            $this->setReturn('allow_ignore', '0');
+            $this->setError(Lang::get(self::LANG_FILE . '.patient_required'));
+            return false;
+        }
+
         //gets service duration
-        $disposicion = Input::get('disposicion_id');
-        if ($disposicion > 0) {
-            $disposicion = Disposicion::find($disposicion);
+        if ($servicio_id === false) {
+            $disposicion = Disposicion::find( Input::get('disposicion_id') );
             $service = $disposicion->servicio;
-            $duration = $service->duracion;
         }
         else {
-            $duration = 0;
+            $service = Servicio::find($servicio_id);
         }
+        $duration = $service->duracion;
         $start = Input::get('inicio');
         //$end = Input::get('fin'];
 
@@ -146,8 +162,6 @@ class CitaController extends BaseController {
         if (!empty($start) && Input::get('persona_id', false)) {
             //gets the input data from the post
             $date = Input::get('fecha');
-            $doctor_id = Input::get('doctor_id');
-            $technician_id = Input::get('tecnico_id');
             $patient_id = Input::get('persona_id');
             $cita_id = (int)Input::get('id', 0);
 
@@ -187,14 +201,12 @@ class CitaController extends BaseController {
             $cita->fin = $end;
             $cita->estado = 0;
             $cita->persona_id = $patient_id;
-            $cita->doctor_id = $doctor_id;
-            $cita->tecnico_id = $technician_id;
             $cita->usuario_id = $user_id;
             $cita->disposicion_id = $disposicion_id;
 
             $error = 0;
 
-            if (!Cita::isOkToPlace($cita, $grouped_ids, $error)) {
+            if (!Cita::isOkToPlace($cita, $grouped_ids, $error, $service->validar_horario, $service->validar_equipo, $service->validar_doctor, $service->validar_tecnico, $service->validar_consultorio)) {
 
                 //Horario del Servicio
                 if ($error == Cita::ERR_SERVICE_TIME) {
@@ -928,36 +940,65 @@ EOT;
 
         $citas_array = array();
         foreach ($citas as $cita) {
-            $doctor = $cita->doctor;
-            if ($doctor) {
-                $doctor_data = $doctor->persona;
-                if ($doctor_data) {
-                    $doctor = Functions::firstNameLastName($doctor_data->nombre, $doctor_data->apellido, true);
-                }
-                else {
-                    $doctor = $doctor->nombre;
-                }
-            }
-            else {
-                $doctor = '';
-            }
-
-            $paciente = $cita->persona;
-
-            //finding the equipment
             $disposicion = Disposicion::find($cita->disposicion_id);
             if ($disposicion) {
+                //equipo & modalidad
                 $equipo = $disposicion->equipo;
-                $equipo_id = $equipo->id;
-                $equipo = $equipo->nombre . Functions::encloseStr($equipo->modelo, ' - ', '');
+                if ($equipo) {
+                    $equipo_id = $equipo->id;
+                    $modalidad = $equipo->modalidad->nombre;
+                    $modalidad_id = $equipo->modalidad_id;
+                    $equipo = $equipo->nombre . Functions::encloseStr($equipo->modelo, ' - ', '');
+                }
+                else {
+                    $equipo = '';
+                    $equipo_id = 0;
+                    $modalidad = '';
+                    $modalidad_id = 0;
+                }
 
+                //doctor
+                $doctor = $disposicion->doctor;
+                if ($doctor) {
+                    $doctor_id = $doctor->id;
+                    $persona = $doctor->persona;
+                    $doctor = $persona ? Functions::firstNameLastName($persona->nombre, $persona->apellido, true) : $doctor->numero;
+                }
+                else {
+                    $doctor = '';
+                    $doctor_id = 0;
+                }
+
+                //tecnico
+                $tecnico = $disposicion->tecnico;
+                if ($tecnico) {
+                    $tecnico_id = $tecnico->id;
+                    $persona = $tecnico->persona;
+                    $tecnico = $persona ? Functions::firstNameLastName($persona->nombre, $persona->apellido, true) : $tecnico->cod_dicom;
+                }
+                else {
+                    $tecnico = '';
+                    $tecnico_id = 0;
+                }
+
+                //consultorio
+                $consultorio = $disposicion->consultorio;
+                if ($consultorio) {
+                    $consultorio_id = $consultorio->id;
+                    $consultorio = $consultorio->nombre;
+                }
+                else{
+                    $consultorio_id = 0;
+                    $consultorio = '';
+                }
+
+                //servicio
                 $servicio = $disposicion->servicio;
             }
-            else {
-                $equipo = '';
-                $equipo_id = 0;
-                $servicio = false;
-            }
+            else continue; //this should not be reached
+
+            //paciente
+            $paciente = $cita->persona;
 
             $patients_phone = $paciente->contactos()->telefonos()->lists('contenido');
             if (is_array($patients_phone) && count($patients_phone) > 0) {
@@ -967,9 +1008,10 @@ EOT;
                 $patients_phone = '';
             }
 
+            //HTML response content
             $title = mb_strtoupper(Functions::firstNameLastName($paciente->nombre, $paciente->apellido)) . "<span class='phone'>" . $patients_phone . '</span>' . ($servicio->duracion >= 20 ? '<br>' : '&nbsp;-&nbsp;') .
-                     '<i>' . $servicio->nombre . '</i>' . ($servicio->duracion >= 30 ? '<br>' : '&nbsp;-&nbsp;') .
-                     '<b>' . $equipo . '</b>';
+                     '<b>' . $servicio->nombre . '</b>' . ($servicio->duracion >= 30 ? '<br>' : '&nbsp;-&nbsp;') .
+                     '<i>' . $equipo . '</i>';
 
             $title = str_replace('"', '',  $title);
 
@@ -977,8 +1019,8 @@ EOT;
             $end = !empty($cita->fin) ? "\"end\": \"$cita->fin\"," : '';
             //$all_day = $end != '' ? 'false' : 'true';
 
-            $bg_color = '375471';//'2983AE'
-            $doctor_color = '406182';
+            $bg_color = '375471';
+            $title_color = '406182';
 
             $atention = (($cita->estado != Cita::DONE && $cita->estado != Cita::CANCELLED) && strtotime($cita->inicio) < time()) ? '1' : '0';
 			
@@ -999,17 +1041,22 @@ EOT;
             }
 
             if ($group_patients && $cita->persona_id == $last_patient_id && $last_day == $cita->fecha && $j > 0 && ($cita->inicio == $last_end_time /*|| $cita->estado == Cita::CANCELLED*/)) {
-                $title = '<i>' . $servicio->nombre . '</i>' . ($servicio->duration >= 30 ? '<br>' : '&nbsp;-&nbsp;') .
-                         '<b>' . $equipo . '</b>';
+                $title = '<b>' . $servicio->nombre . '</b>' . ($servicio->duracion >= 20 ? '<br>' : '&nbsp;-&nbsp;') .
+                         '<i>' . $equipo . '</i>';
                 $duration = $servicio->duracion;
                 if ($citas_array[$j-1]['has_many'] == 0) {
-                    $citas_array[$j-1]['title'] = "<span class='grouped-event first-in-group state" . $citas_array[$j-1]['state_id'] . "' attr-id='" . $citas_array[$j-1]['id'] . "' attr-doctor='" . $citas_array[$j-1]['doctor_id'] . "' attr-state='" . $citas_array[$j-1]['state_id'] . "' attr-office='" . $citas_array[$j-1]['office_id'] . "' attr-service='" . $citas_array[$j-1]['service_id'] . "' attr-duration='" . $citas_array[$j-1]['duration'] . "' attr-equipment='" . $citas_array[$j-1]['equipment_id'] . "'>" . $citas_array[$j-1]['title'] . "</span>";
+                    $citas_array[$j-1]['title'] = "<span class='grouped-event first-in-group state" . $citas_array[$j-1]['state_id'] . "' attr-id='" . $citas_array[$j-1]['id'] . "' attr-doctor='" . $citas_array[$j-1]['doctor_id'] . "' attr-technician='" . $citas_array[$j-1]['technician_id'] . "' attr-state='" . $citas_array[$j-1]['state_id'] . "' attr-office='" . $citas_array[$j-1]['office_id'] . "' attr-service='" . $citas_array[$j-1]['service_id'] . "' attr-duration='" . $citas_array[$j-1]['duration'] . "' attr-equipment='" . $citas_array[$j-1]['equipment_id'] . "' attr-mode='" . $citas_array[$j-1]['mode_id'] . "'>" . $citas_array[$j-1]['title'] . "</span>";
                 }
                 $title = str_replace('"', '',  $title);
-                $doctor_name = $cita->doctor_id != $last_doctor_id ? (' <span class=\'badge\' style=\'background-color:#' . $doctor_color . '\'>' . $doctor . '</span>') : '';
-                $citas_array[$j-1]['title'] .= "<br>" . //"<br>____________<br>" .
-                    "<span class='grouped-event state{$cita->estado} doctor{$cita->doctor_id} office0 service{$servicio->id} equipment{$equipo_id} tip-right' attr-id='{$cita->id}' attr-doctor='{$cita->doctor_id}' attr-state='{$cita->estado}' attr-office='0' attr-service='{$servicio->id}' attr-duration='{$duration}' attr-equipment='{$equipo_id}' data-html='true' data-toggle='tooltip' data-original-title='{$comment}' title='{$comment}'>" .
-                        "<small>" . strtolower(Functions::justTime($start,true,true,true)) . "</small>" . $doctor_name . (strlen($comment) > 0 ? (" <small><i class='fa fa-comment'></i></small>") : "") . "<br>" .
+
+                //$doctor_name = $cita->doctor_id != $last_doctor_id ? (' <span class=\'badge\' style=\'background-color:#' . $doctor_color . '\'>' . $doctor . '</span>') : '';
+                $doctor_name = (' <span class=\'badge\' style=\'background-color:#' . $title_color . '\'>' . $modalidad . '</span>');
+
+                $citas_array[$j-1]['title'] .= "<br>" .
+                    "<span class='grouped-event state{$cita->estado} doctor{$doctor_id} technician{$tecnico_id} office{$consultorio_id} service{$servicio->id} equipment{$equipo_id} mode{$modalidad_id} tip-right' attr-id='{$cita->id}' attr-doctor='{$doctor_id}' attr-technician='{$tecnico_id}' attr-state='{$cita->estado}' attr-office='{$consultorio_id}' attr-service='{$servicio->id}' attr-duration='{$duration}' attr-equipment='{$equipo_id}' attr-mode='{$modalidad_id}' data-html='true' data-toggle='tooltip' data-original-title='{$comment}' title='{$comment}'>" .
+                        "<div class='divider'>" .
+                            "<small>" . strtolower(Functions::justTime($start,true,true,true)) . "</small>" . $doctor_name . (strlen($comment) > 0 ? (" <small><i class='fa fa-comment'></i></small>") : "") . "<br>" .
+                        "</div>" .
                         $title .
                     "</span>";
                 $citas_array[$j-1]['end'] = $end;
@@ -1021,22 +1068,25 @@ EOT;
                     "title" => $title,
                     "start" => $start,
                     "end" => $end,
-                    "allDay" => 'false',
+                    "allDay" => $servicio->duracion == 0 ? 'true' : 'false',
                     "backgroundColor" => $bg_color,
-                    "doctor_id" => $cita->doctor_id,
+                    "doctor_id" => $doctor_id,
                     "doctor_name" => $doctor,
-                    "doctor_color" => $doctor_color,
+                    "technician_id" => $tecnico_id,
+                    "doctor_color" => $title_color,
                     "patient_id" => $cita->persona_id,
                     "service_id" => $servicio->id,
                     "duration" => $servicio->duracion,
-                    "office_id" => 0,
+                    "office_id" => $consultorio_id,
                     "equipment_id" => $equipo_id,
                     "state_id" => $cita->estado,
                     "atention" => $atention,
                     "comment" => $comment,
                     "user" => $user,
                     "group_id" => 0,
-                    "has_many" => 0
+                    "has_many" => 0,
+                    "mode_id" => $modalidad_id,
+                    "mode" => $modalidad
                 );
                 $j++;
                 $last_patient_id = $cita->persona_id;
@@ -1057,6 +1107,7 @@ EOT;
                 "doctor_id": "{$cita['doctor_id']}",
                 "doctor_name": "{$cita['doctor_name']}",
                 "doctor_color": "#{$cita['doctor_color']}",
+                "technician_id": "{$cita['technician_id']}",
                 "patient_id": "{$cita['patient_id']}",
                 "service_id": "{$cita['service_id']}",
                 "equipment_id": "{$cita['equipment_id']}",
@@ -1066,7 +1117,9 @@ EOT;
 				"comment": "{$cita['comment']}",
 				"user": "{$cita['user']}",
 				"group_id": "{$cita['group_id']}",
-				"has_many": "{$cita['has_many']}"
+				"has_many": "{$cita['has_many']}",
+				"mode_id": "{$cita['mode_id']}",
+				"mode": "{$cita['mode']}"
             }
 EOT;
         }
@@ -1229,9 +1282,27 @@ EOT;
         $this->setReturn('fin', $end);
     }
 
-    private function infoDoctor($doctor_id) {
+    private function infoDoctor($doctor_id, $from_disposicion = false) {
         $avatar = URL::asset('img/avatars/s/default.jpg');
-        $doctor = $doctor_id > 0 ? Doctor::find($doctor_id) : false;
+        if (!$from_disposicion) {
+            $doctor = $doctor_id > 0 ? Doctor::find($doctor_id) : false;
+        }
+        else {
+            if ($this->disposicion === null) {
+                $disposicion = Disposicion::find($doctor_id);
+            }
+            else {
+                $disposicion = $this->disposicion;
+            }
+            if ($disposicion) {
+                if ($this->disposicion === null) $this->disposicion = $disposicion;
+                $doctor = $disposicion->doctor;
+                if (!$doctor) $doctor_id = '';
+                else $doctor_id = $doctor->id;
+            }
+            else $doctor = false;
+        }
+
         if ($doctor) {
             $doctor_data = $doctor->persona;
             if ($doctor_data) {
@@ -1254,9 +1325,27 @@ EOT;
         $this->setReturn('doctor_id', $doctor_id);
     }
 
-    private function infoTechnician($technician_id) {
+    private function infoTechnician($technician_id, $from_disposicion = false) {
         $avatar = URL::asset('img/avatars/s/default.jpg');
-        $tecnico = $technician_id > 0 ? Tecnico::find($technician_id) : false;
+        if (!$from_disposicion) {
+            $tecnico = $technician_id > 0 ? Tecnico::find($technician_id) : false;
+        }
+        else {
+            if ($this->disposicion === null) {
+                $disposicion = Disposicion::find($technician_id);
+            }
+            else {
+                $disposicion = $this->disposicion;
+            }
+            if ($disposicion) {
+                if ($this->disposicion === null) $this->disposicion = $disposicion;
+                $tecnico = $disposicion->tecnico;
+                if (!$tecnico) $technician_id = '';
+                else $technician_id = $tecnico->id;
+            }
+            else $tecnico = false;
+        }
+
         if ($tecnico) {
             $doctor_data = $tecnico->persona;
             if ($doctor_data) {
@@ -1321,13 +1410,19 @@ EOT;
             }
         }
         else {
-            $disposicion = Disposicion::find($service_id);
+            if ($this->disposicion === null) {
+                $disposicion = Disposicion::find($service_id);
+            }
+            else {
+                $disposicion = $this->disposicion;
+            }
             if ($disposicion) {
+                if ($this->disposicion === null) $this->disposicion = $disposicion;
                 $service = $disposicion->servicio;
                 $equipment = $disposicion->equipo;
 
                 $desc = $service->nombre;
-                $desc .= ' <span class="pull-right text-muted">' . $equipment->modalidad->nombre . '</span>';
+                $desc .= ' <span class="pull-right text-muted">' . ($equipment ? $equipment->modalidad->nombre : '') . '</span>';
                 $service_id = $service->id;
             }
             else {
@@ -1355,13 +1450,24 @@ EOT;
             }
         }
         else {
+            if ($this->disposicion === null) {
             $disposicion = Disposicion::find($equipo_id);
+            }
+            else {
+                $disposicion = $this->disposicion;
+            }
             if ($disposicion) {
+                if ($this->disposicion === null) $this->disposicion = $disposicion;
                 $equipment = $disposicion->equipo;
 
-                $desc = $equipment->nombre;
-                //$desc .= ' <span class="pull-right badge">' . $equipment->modalidad->nombre . '</span>';
-                $equipo_id = $equipment->id;
+                if ($equipment) {
+                    $desc = $equipment->nombre;
+                    $equipo_id = $equipment->id;
+                }
+                else {
+                    $desc = Lang::get('global.not_assigned');
+                    $equipo_id = '';
+                }
             }
             else {
                 $desc = Lang::get('global.not_found');
@@ -1374,6 +1480,37 @@ EOT;
         $this->setReturn('equipo_id', $equipo_id);
     }
 
+    private function infoOffice($office_id, $from_disposicion = false) {
+        if (!$from_disposicion) {
+            $office = $office_id > 0 ? Consultorio::find($office_id) : false;
+        }
+        else {
+            if ($this->disposicion === null) {
+            $disposicion = Disposicion::find($office_id);
+            }
+            else {
+                $disposicion = $this->disposicion;
+            }
+            if ($disposicion) {
+                if ($this->disposicion === null) $this->disposicion = $disposicion;
+                $office = $disposicion->consultorio;
+                if (!$office) $office_id = 0;
+                else $office_id = $office->id;
+            }
+            else $office = false;
+        }
+
+        if ($office) {
+            $office = $office->nombre;
+        } else {
+            $office = Lang::get('global.' . ($office_id > 0 ? 'not_found' : 'not_assigned'));
+        }
+        //send information
+        $this->setReturn('office_name_inf', $office);
+        //send back data
+        $this->setReturn('consultorio_id', $office_id);
+    }
+
 
     public function getAllInfo() {
         $cita_id = (int)Input::get('id');
@@ -1383,11 +1520,12 @@ EOT;
             $cita = $model::find($cita_id);
             if ($cita) {
                 $this->infoDateTime($cita->fecha, Functions::justTime($cita->inicio), Functions::justTime($cita->fin));
-                $this->infoDoctor($cita->doctor_id);
-                $this->infoTechnician($cita->tecnico_id);
+                $this->infoDoctor($cita->disposicion_id, true);
+                $this->infoTechnician($cita->disposicion_id, true);
                 $this->infoPatient($cita->persona_id);
                 $this->infoService($cita->disposicion_id, true);
                 $this->infoEquipment($cita->disposicion_id, true);
+                $this->infoOffice($cita->disposicion_id, true);
             }
         }
         return $this->returnJson();
@@ -1403,6 +1541,13 @@ EOT;
     public function getInfoDoctor() {
         if ($this->validateInputs()) {
             $this->infoDoctor(Input::get('doctor_id'));
+        }
+        return $this->returnJson();
+    }
+
+    public function getInfoTechnician() {
+        if ($this->validateInputs()) {
+            $this->infoTechnician(Input::get('tecnico_id'));
         }
         return $this->returnJson();
     }
@@ -1428,6 +1573,13 @@ EOT;
         return $this->returnJson();
     }
 
+    public function getInfoOffice() {
+        if ($this->validateInputs()) {
+            $this->infoOffice(Input::get('consultorio_id'));
+        }
+        return $this->returnJson();
+    }
+
 
     public function getAvailableEquipment() {
         $service_id = (int)Input::get('servicio_id', 0);
@@ -1447,7 +1599,7 @@ EOT;
                 if ($busy_list) {
                     $equipments_html = '<div class="list-group">';
                     //$equipments = $service->equipos;
-                    $equipments = DB::table('vw_servicio_equipo')->where('servicio_id', '=', $service_id)->get();
+                    $equipments = DB::table('vw_servicio_equipo')->where('servicio_id', '=', $service_id)->orderBy('equipo')->get();
                     foreach ($equipments as $equipment) {
                         $badge = Lang::get(self::LANG_FILE . '.available');
                         $in_use = false;
@@ -1488,7 +1640,7 @@ EOT;
                     }
                     $equipments_html .= '</div>';
                     //no available equipments
-                    if ($first_available === false) {
+                    if ($first_available === false && $service->validar_equipo) {
                         $first_available = 0;
                         $this->setReturn('msg', Lang::get('citas.overlap_equipment'));
                     }
@@ -1496,6 +1648,78 @@ EOT;
             }
         }
         $this->setReturn('btns_list', $equipments_html);
+        if ($first_available !== false) {
+            $this->setReturn('available', $first_available);
+        }
+        return $this->returnJson();
+    }
+
+
+    public function getAvailableOffices() {
+        $service_id = (int)Input::get('servicio_id', 0);
+        $start = Input::get('inicio', '');
+        $date = Input::get('fecha', '');
+        $ignore_id = (int)Input::get('ignore_cita_id', 0);
+        $offices_html = '';
+        $first_available = false;
+        if ($service_id) {
+            $service = Servicio::find($service_id);
+            if ($service) {
+                $start = $date . ' ' . Functions::ampmto24($start);
+                $start_time = strtotime($start);
+                $duration = $service->duracion;
+                $end = Functions::addMinutes($start_time, $duration);
+                $busy_list = Cita::notCancelled()->between($start, $end, $inclusive=true)->with('Disposicion')->get();
+                if ($busy_list) {
+                    $offices_html = '<div class="list-group">';
+                    $offices = DB::table('vw_servicio_consultorio')->where('servicio_id', '=', $service_id)->orderBy('nombre')->get();
+                    foreach ($offices as $office) {
+                        $badge = Lang::get(self::LANG_FILE . '.available');
+                        $in_use = false;
+                        $last_start_time = false;
+                        $last_end_time = false;
+                        foreach ($busy_list as $o) {
+                            if ($o->disposicion->consultorio_id == $office->id && $o->id != $ignore_id) {
+                                if ($last_start_time !== false) {
+                                    if ($this->isOverlapping($o->inicio, $o->fin, $last_start_time, $last_end_time)) {
+                                        $in_use = true;
+                                        break;
+                                    }
+                                }
+                                else {
+                                    $in_use = true;
+                                    break;
+                                }
+                                $last_start_time = $o->inicio;
+                                $last_end_time = $o->fin;
+                            }
+                        }
+                        if ($in_use) {
+                            $badge = '<i class="fa fa-exclamation-triangle"></i> &nbsp;' . Lang::get(self::LANG_FILE . '.not_available');
+                        }
+                        else {
+                            if ($first_available === false) {
+                                $first_available = $office->id;
+                            }
+                        }
+
+                        $offices_html .= <<<EOT
+                            <a href="#" class="list-group-item office-btn" attr-id="{$office->id}">
+                                {$office->nombre}
+                                <span class="badge">{$badge}</span>
+                            </a>
+EOT;
+                    }
+                    $offices_html .= '</div>';
+                    //no available offices
+                    if ($first_available === false && $service->validar_consultorio) {
+                        $first_available = 0;
+                        $this->setReturn('msg', Lang::get('citas.no_offices'));
+                    }
+                }
+            }
+        }
+        $this->setReturn('btns_list', $offices_html);
         if ($first_available !== false) {
             $this->setReturn('available', $first_available);
         }

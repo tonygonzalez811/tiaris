@@ -51,7 +51,11 @@ class Modalidad extends Eloquent {
     }
 
 
-    //ASIGNACIONES:
+    //ATRIBUTOS:
+    public function getNombreAttribute()
+    {
+        return strtoupper($this->attributes['nombre']);
+    }
 
 
     //FILTROS:

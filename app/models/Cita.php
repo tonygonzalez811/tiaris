@@ -72,7 +72,8 @@ class Cita extends Eloquent {
             'estado'                => 'integer',
             'doctor_id'             => 'integer|exists:doctor,id',
             'tecnico_id'            => 'integer|exists:tecnico,id',
-            'persona_id'            => ($ignore_id == 0 ? 'required|' : '') . 'integer|exists:persona,id',
+            //'persona_id'            => ($ignore_id == 0 ? 'required|' : '') . 'integer|exists:persona,id',
+            'persona_id'            => 'integer|exists:persona,id',
             'servicio_id'           => ($ignore_id == 0 ? 'required|' : '') . 'integer|exists:servicio,id',
             'equipo_id'             => 'integer|exists:equipo,id',
             'disposicion_id'        => 'integer|exists:disposicion,id'
@@ -286,11 +287,13 @@ class Cita extends Eloquent {
         return true;
     }
 
-    public static function isOkToPlace($item, $grouped_ids = null, &$error) {
+    public static function isOkToPlace($item, $grouped_ids = null, &$error, $validate_time=true, $validate_equipment=true, $validate_doctor=true, $validate_technician=true, $validate_office=true) {
         //check that the service is available for the current time
-        if (!self::availableServiceTime($item)) {
-            $error = self::ERR_SERVICE_TIME;
-            return false;
+        if ($validate_time) {
+            if (!self::availableServiceTime($item)) {
+                $error = self::ERR_SERVICE_TIME;
+                return false;
+            }
         }
 
         //get all the events in the time range
@@ -307,12 +310,12 @@ class Cita extends Eloquent {
                 if (in_array($o->id, $grouped_ids)) continue; //not going to validate against grouped items
 
                 if (!self::availablePatient($item, $o)) { $error = self::ERR_PATIENT; return false; }
-                if (!self::availableDoctor($item, $o)) { $error = self::ERR_DOCTOR; return false; }
-                if (!self::availableTechnician($item, $o)) { $error = self::ERR_TECHNICIAN; return false; }
-                if (!self::availableOffice($item, $o)) { $error = self::ERR_OFFICE; return false; }
+                if ($validate_doctor && !self::availableDoctor($item, $o)) { $error = self::ERR_DOCTOR; return false; }
+                if ($validate_technician && !self::availableTechnician($item, $o)) { $error = self::ERR_TECHNICIAN; return false; }
+                if ($validate_office && !self::availableOffice($item, $o)) { $error = self::ERR_OFFICE; return false; }
             }
 
-            if (!self::availableEquipment($item, $overlapping, $grouped_ids)) {
+            if ($validate_equipment && !self::availableEquipment($item, $overlapping, $grouped_ids)) {
                 $error = self::ERR_EQUIPMENT;
                 return false;
             }
@@ -360,7 +363,7 @@ class Cita extends Eloquent {
         if ($disposicion) {
             $servicio = $disposicion->servicio;
             if ($servicio && $servicio->validar_horario) {
-                return (Horario::forDateTime($item->inicio, $item->fin, $item->disposicion_id)->count() > 0);
+                return (Horario::forDateTime($item->inicio, $item->fin, $servicio->id)->count() > 0);
             }
         }
         return true;
@@ -509,20 +512,41 @@ class Cita extends Eloquent {
             }
         }
         else $user = '';
+        
+        $disposicion = Disposicion::find($item->disposicion_id);
 
         //finding the doctor
-        $doctor = Doctor::find($item->doctor_id);//$item->doctor;
+        $doctor = $disposicion->doctor;
         if ($doctor) {
-            $doctor_data = $doctor->persona;
-            if ($doctor_data) {
-                $doctor = Functions::firstNameLastName($doctor_data->nombre, $doctor_data->apellido);
+            $doctor_id = $doctor->id;
+            $persona = $doctor->persona;
+            if ($persona) {
+                $doctor = Functions::firstNameLastName($persona->nombre, $persona->apellido);
             }
             else {
                 $doctor = $doctor->numero;
             }
         }
         else {
+            $doctor_id = 0;
             $doctor = Lang::get('global.not_assigned');
+        }
+
+        //finding the technician
+        $technician = $disposicion->tecnico;
+        if ($technician) {
+            $technician_id = $technician->id;
+            $persona = $technician->persona;
+            if ($persona) {
+                $technician = Functions::firstNameLastName($persona->nombre, $persona->apellido);
+            }
+            else {
+                $technician = $technician->numero;
+            }
+        }
+        else {
+            $technician_id = 0;
+            $technician = Lang::get('global.not_assigned');
         }
 
         //finding the patient
@@ -534,35 +558,37 @@ class Cita extends Eloquent {
             $patient = '';
         }
 
-        //finding the service
-        $disposicion = Disposicion::find($item->disposicion_id);
-        if ($disposicion) {
-            //finding the equipment
-            $equipment = $disposicion->equipo;
-            if ($equipment) {
-                $equipment_id = $equipment->id;
-                $equipment = $equipment->nombre . Functions::encloseStr($equipment->modelo, ' - ', '');
-            }
-            else {
-                $equipment_id = 0;
-                $equipment = '';
-            }
-
-            $service = $disposicion->servicio;
-            $duration = $service->duracion;
-            $service = $service->nombre;
+        //finding the equipment
+        $equipment = $disposicion->equipo;
+        if ($equipment) {
+            $equipment_id = $equipment->id;
+            $equipment = $equipment->nombre . Functions::encloseStr($equipment->modelo, ' - ', '');
         }
         else {
-            $service = '';
             $equipment_id = 0;
             $equipment = '';
-            $duration = 0;
         }
+
+        //finding the office
+        $office = $disposicion->consultorio;
+        if ($office) {
+            $office_id = $office->id;
+            $office = $office->nombre;
+        }
+        else {
+            $office_id = 0;
+            $office = '';
+        }
+
+        $service = $disposicion->servicio;
+        $duration = $service->duracion;
+        $service_id = $service->id;
+        $service = $service->nombre;
 
         //finding note
         $note = '';
         if ($get_note) {
-            $note = Nota::where('cita_id', '=', $item->id)->first();//$item->nota;
+            $note = $item->nota;//Nota::where('cita_id', '=', $item->id)->first();
             if ($note) {
                 $note = nl2br($note->contenido);
             }
@@ -575,14 +601,19 @@ class Cita extends Eloquent {
             'duration' => $duration,
             'user_id' => $item->usuario_id,
             'user' => $user,
-            'doctor_id' => $item->doctor_id,
+            'disposition_id' => $item->disposicion_id,
+            'doctor_id' => $doctor_id,
             'doctor' => $doctor,
+            'technician_id' => $technician_id,
+            'technician' => $technician,
             'patient_id' => $item->persona_id,
             'patient' => $patient,
-            'service_id' => $item->servicio_id,
+            'service_id' => $service_id,
             'service' => $service,
             'equipment_id' => $equipment_id,
             'equipment' => $equipment,
+            'office_id' => $office_id,
+            'office' => $office,
             'state_id' => $item->estado,
             'state' => Lang::get('citas.' . Cita::state($item->estado)),
             'note' => $note
