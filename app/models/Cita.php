@@ -146,7 +146,7 @@ class Cita extends Eloquent {
 
     //FILTROS:
     public function scopeLatestOnes($query) {
-        return $query->where('fecha', '>', date('Y-m-d', strtotime("-1 week")));
+        return $query->where('fecha', '>', date('Y-m-d', strtotime('-1 week')));
     }
 
     public function scopeFromDate($query, $val) {
@@ -163,6 +163,14 @@ class Cita extends Eloquent {
             return $query->where('fecha', '<=', $val);
         }
         return $query;
+    }
+
+    public function scopeToNow($query) {
+        return $query->where('inicio', '<=', date('Y-m-d H:i:s', strtotime('-2 hours')));
+    }
+
+    public function scopeNotSent($query) {
+        return $query->where('enviado', '=', 'false');
     }
 
     public function scopeForToday($query) {

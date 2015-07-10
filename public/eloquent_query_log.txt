@@ -1,14 +1,6 @@
-select * from "usuario" where "id" = ? and "remember_token" = ? limit 1[8|kyXptezYdqZy83Ne0lQyO4ha4Z235E0p3GtdbBzmPP1JZ4DkgywhCL3wMQWb](2.58)
+select * from "cita" where "enviado" = ? and "inicio" <= ?[false|2015-07-09 12:24:55](2.44)
 
-select * from "horario" where "servicio_id" = ? and "dia" = ? and "fin" = ? limit 1[8|3|20:00:00](1.51)
+select * from "disposicion" where "disposicion"."id" = ? limit 1[47](1.64)
 
-select * from "horario" where "servicio_id" = ? and "dia" = ? and "inicio" = ? limit 1[8|3|20:00:00](0.58)
-
-insert into "horario" ("dia", "inicio", "fin", "servicio_id") values (?, ?, ?, ?) returning "id"[3|11:00|13:00|8](8.13)
-
-select * from "usuario" where "id" = ? and "remember_token" = ? limit 1[8|kyXptezYdqZy83Ne0lQyO4ha4Z235E0p3GtdbBzmPP1JZ4DkgywhCL3wMQWb](2.84)
-
-select * from "servicio" where "id" = ? limit 1[8](1.28)
-
-select * from "horario" where "horario"."servicio_id" = ?[8](1.02)
+select * from "equipo" where "equipo"."id" is null limit 1[](1.4)
 

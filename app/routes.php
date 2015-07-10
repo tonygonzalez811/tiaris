@@ -66,6 +66,11 @@ Route::get('server_time', function() {
     return '<pre>' . Functions::longDateFormat(time(), true, false) . '</pre>'; //date(''Y-m-d h:i:s a'');
 });
 
+Route::get('verificar_tiaris', array(
+    'as' => 'tiaris_cron_job',
+    'uses' => 'ApplicationController@verificarTiaris'
+));
+
 
 /**
  * Rutas disponibles cuando el usuario NO ha iniciado sesion
