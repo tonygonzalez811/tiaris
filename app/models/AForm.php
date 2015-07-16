@@ -514,8 +514,10 @@ EOT;
         if ($this->show_labels) {
             $output = <<<EOT
             <div class="form-group">
-                <label for="{$id}" class="col-md-2 control-label">{$label}</label>
-                <select multiple="" id="{$id}" name="{$name}" class="multi-select col-sm-9 col-xs-10">
+                <label for="{$id}" class="col-md-2 control-label">
+                    {$label}
+                </label>
+                <select multiple="" id="{$id}" name="{$name}" class="multi-select col-sm-8 col-xs-9">
 EOT;
         }
         else {
@@ -544,6 +546,9 @@ EOT;
         }
         $output.= <<<EOT
                 </select>
+                <button class="btn btn-default select-all button-left-attachment" type="button">
+                    <i class="fa fa-reply-all"></i>
+                </button>
             </div>
 EOT;
         return $output;

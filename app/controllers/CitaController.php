@@ -206,7 +206,7 @@ class CitaController extends BaseController {
 
             $error = 0;
 
-            if (!Cita::isOkToPlace($cita, $grouped_ids, $error, $service->validar_horario, $service->validar_equipo, $service->validar_doctor, $service->validar_tecnico, $service->validar_consultorio)) {
+            if (!Cita::isOkToPlace($cita, $grouped_ids, $error, $service->validar_horario)) {
 
                 //Horario del Servicio
                 if ($error == Cita::ERR_SERVICE_TIME) {
@@ -938,6 +938,10 @@ EOT;
         $last_day = 0;
         $last_end_time = 0;
 
+        $bg_color = '375471';
+        $title_colors = array('406182', 'D50000', 'C51162', 'AA00FF', '311B92', '004D40', '1B5E20', 'BF360C', '3E2723');
+        $mode_color = array();
+
         $citas_array = array();
         foreach ($citas as $cita) {
             $disposicion = Disposicion::find($cita->disposicion_id);
@@ -1019,8 +1023,16 @@ EOT;
             $end = !empty($cita->fin) ? "\"end\": \"$cita->fin\"," : '';
             //$all_day = $end != '' ? 'false' : 'true';
 
-            $bg_color = '375471';
-            $title_color = '406182';
+            if (!isset($mode_color[$modalidad_id])) {
+                $mode_color_count = count($mode_color);
+                if ($mode_color_count < count($title_colors)) {
+                    $mode_color[$modalidad_id] = $title_colors[$mode_color_count];
+                }
+                else {
+                    $mode_color[$modalidad_id] = '000';
+                }
+            }
+            $title_color = $mode_color[$modalidad_id];
 
             $atention = (($cita->estado != Cita::DONE && $cita->estado != Cita::CANCELLED) && strtotime($cita->inicio) < time()) ? '1' : '0';
 			
@@ -1435,6 +1447,11 @@ EOT;
         $this->setReturn('service_name_inf', $desc);
         $this->setReturn('duration_inf', $service ? Functions::minToHours($service->duracion) : '');
         $this->setReturn('duration', $service ? $service->duracion : '0');
+
+        $this->setReturn('validar_equipo', (int)$service->validar_equipo);
+        $this->setReturn('validar_doctor', (int)$service->validar_doctor);
+        $this->setReturn('validar_tecnico', (int)$service->validar_tecnico);
+        $this->setReturn('validar_consultorio', (int)$service->validar_consultorio);
         //send back data
         $this->setReturn('servicio_id', $service_id);
     }

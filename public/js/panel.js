@@ -1007,6 +1007,15 @@ function isset($var) {
   return typeof $var != 'undefined';
 }
 
+function addClassIf($obj, class_name, add) {
+    if (add) {
+        $obj.addClass(class_name);
+    }
+    else {
+        $obj.removeClass(class_name);
+    }
+}
+
 //reloading ajax data for allowed panels
 function reloadPanel(box) {
     switch (box.attr('id')) {

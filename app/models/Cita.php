@@ -295,7 +295,7 @@ class Cita extends Eloquent {
         return true;
     }
 
-    public static function isOkToPlace($item, $grouped_ids = null, &$error, $validate_time=true, $validate_equipment=true, $validate_doctor=true, $validate_technician=true, $validate_office=true) {
+    public static function isOkToPlace($item, $grouped_ids = null, &$error, $validate_time=true) {
         //check that the service is available for the current time
         if ($validate_time) {
             if (!self::availableServiceTime($item)) {
@@ -318,12 +318,12 @@ class Cita extends Eloquent {
                 if (in_array($o->id, $grouped_ids)) continue; //not going to validate against grouped items
 
                 if (!self::availablePatient($item, $o)) { $error = self::ERR_PATIENT; return false; }
-                if ($validate_doctor && !self::availableDoctor($item, $o)) { $error = self::ERR_DOCTOR; return false; }
-                if ($validate_technician && !self::availableTechnician($item, $o)) { $error = self::ERR_TECHNICIAN; return false; }
-                if ($validate_office && !self::availableOffice($item, $o)) { $error = self::ERR_OFFICE; return false; }
+                if (!self::availableDoctor($item, $o)) { $error = self::ERR_DOCTOR; return false; }
+                if (!self::availableTechnician($item, $o)) { $error = self::ERR_TECHNICIAN; return false; }
+                if (!self::availableOffice($item, $o)) { $error = self::ERR_OFFICE; return false; }
             }
 
-            if ($validate_equipment && !self::availableEquipment($item, $overlapping, $grouped_ids)) {
+            if (!self::availableEquipment($item, $overlapping, $grouped_ids)) {
                 $error = self::ERR_EQUIPMENT;
                 return false;
             }

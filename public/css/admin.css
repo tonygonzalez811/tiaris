@@ -9289,3 +9289,11 @@ h4.flash i.fa-exclamation-triangle {
 .pagebreak {
     page-break-before: always;
 }
+
+.button-left-attachment {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+    height: 33px;
+    color: #888;
+}

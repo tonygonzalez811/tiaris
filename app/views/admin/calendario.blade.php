@@ -312,52 +312,6 @@ Calendario
                 </div>
             </a>
 
-            <!-- doctor -->
-            <a href="#" class="list-group-item" data-toggle="modal" data-target="#new_event_doctor_modal">
-                <div class="row form-item">
-                    <div class="col-sm-2 col-xs-2">
-                        <div class="status-icon" id="icon_doctor">
-                            <i class="fa fa-4x fa-user-md"></i>
-                        </div>
-                    </div>
-                    <div class="col-sm-10 col-xs-10">
-                        <div class="row">
-                            <div class="col-sm-10">
-                                <h4 class="list-group-item-heading text-muted" id="cita_doctor_name" data-select_lbl="{{ Lang::get('citas.select_doctor') }}">{{ Lang::get('citas.select_doctor') }}</h4>
-                                <p class="list-group-item-text" id="cita_doctor_inf"></p>
-                                {{ $frm->hidden('doctor_id', 'doctor_id_hidden') }}
-                            </div>
-                            <div class="col-sm-2 hidden-xs">
-                                <img class="avatar-thumb" id="cita_doctor_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-
-            <!-- technician -->
-            <a href="#" class="list-group-item" data-toggle="modal" data-target="#new_event_technician_modal">
-                <div class="row form-item">
-                    <div class="col-sm-2 col-xs-2">
-                        <div class="status-icon" id="icon_technician">
-                            <i class="fa fa-4x fa-user"></i>
-                        </div>
-                    </div>
-                    <div class="col-sm-10 col-xs-10">
-                        <div class="row">
-                            <div class="col-sm-10">
-                                <h4 class="list-group-item-heading text-muted" id="cita_technician_name" data-select_lbl="{{ Lang::get('citas.select_technician') }}">{{ Lang::get('citas.select_technician') }}</h4>
-                                <p class="list-group-item-text" id="cita_technician_inf"></p>
-                                {{ $frm->hidden('tecnico_id', 'tecnico_id_hidden') }}
-                            </div>
-                            <div class="col-sm-2 hidden-xs">
-                                <img class="avatar-thumb" id="cita_technician_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-
             <!-- patient -->
             <a href="#" id="open_patients_modal" class="list-group-item" data-toggle="modal" data-target="#new_event_patient_modal">
                 <div class="row form-item patient">
@@ -390,8 +344,54 @@ Calendario
                 </div>
             </a>
 
+            <!-- doctor -->
+            <a href="#" id="open_doctors_modal" class="list-group-item hidden" data-toggle="modal" data-target="#new_event_doctor_modal">
+                <div class="row form-item">
+                    <div class="col-sm-2 col-xs-2">
+                        <div class="status-icon" id="icon_doctor">
+                            <i class="fa fa-4x fa-user-md"></i>
+                        </div>
+                    </div>
+                    <div class="col-sm-10 col-xs-10">
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <h4 class="list-group-item-heading text-muted" id="cita_doctor_name" data-select_lbl="{{ Lang::get('citas.select_doctor') }}">{{ Lang::get('citas.select_doctor') }}</h4>
+                                <p class="list-group-item-text" id="cita_doctor_inf"></p>
+                                {{ $frm->hidden('doctor_id', 'doctor_id_hidden') }}
+                            </div>
+                            <div class="col-sm-2 hidden-xs">
+                                <img class="avatar-thumb" id="cita_doctor_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- technician -->
+            <a href="#" id="open_technicians_modal" class="list-group-item hidden" data-toggle="modal" data-target="#new_event_technician_modal">
+                <div class="row form-item">
+                    <div class="col-sm-2 col-xs-2">
+                        <div class="status-icon" id="icon_technician">
+                            <i class="fa fa-4x fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="col-sm-10 col-xs-10">
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <h4 class="list-group-item-heading text-muted" id="cita_technician_name" data-select_lbl="{{ Lang::get('citas.select_technician') }}">{{ Lang::get('citas.select_technician') }}</h4>
+                                <p class="list-group-item-text" id="cita_technician_inf"></p>
+                                {{ $frm->hidden('tecnico_id', 'tecnico_id_hidden') }}
+                            </div>
+                            <div class="col-sm-2 hidden-xs">
+                                <img class="avatar-thumb" id="cita_technician_avatar" src="{{ URL::asset('img/avatars/s/default.jpg') }}" alt="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
             <!-- equipment -->
-            <a href="#" id="open_equipments_modal" class="list-group-item" data-toggle="modal" data-target="#new_event_equipment_modal">
+            <a href="#" id="open_equipments_modal" class="list-group-item hidden" data-toggle="modal" data-target="#new_event_equipment_modal">
                 <div class="row form-item">
                     <div class="col-sm-2 col-xs-2">
                         <div class="status-icon" id="icon_equipment">
@@ -407,7 +407,7 @@ Calendario
             </a>
 
             <!-- office -->
-            <a href="#" id="open_offices_modal" class="list-group-item" data-toggle="modal" data-target="#new_event_office_modal">
+            <a href="#" id="open_offices_modal" class="list-group-item hidden" data-toggle="modal" data-target="#new_event_office_modal">
                 <div class="row form-item">
                     <div class="col-sm-2 col-xs-2">
                         <div class="status-icon" id="icon_office">
@@ -550,11 +550,13 @@ EOT;
     {{ $frm->modalOpen('new_event_equipment_modal', Lang::get('citas.set') . ' ' . Lang::get('equipo.title_single')) }}
         <form id="frm_new_event_equipment_inf" class="form-horizontal" role="form" method="get" autocomplete="off" action="{{ URL::route('cita_equipment_inf_get') }}">
             @if (Auth::user()->admin)
-            {{ $frm->remoteSelect('equipo_id', null, Lang::get('equipo.title_single'), URL::route('admin_equipos_list')) }}
+            {{-- $frm->remoteSelect('equipo_id', null, Lang::get('equipo.title_single'), URL::route('admin_equipos_list')) --}}
+            <input type="hidden" name="equipo_id">
             @endif
         </form>
         <div id="available_equipments_holder"></div>
-    {{ $frm->modalClose(Auth::user()->admin ? null : false) }}
+    {{-- $frm->modalClose(Auth::user()->admin ? null : false) --}}
+    {{ $frm->modalClose(false) }}
     <!-- /NEW EQUIPMENT FORM -->
 
     <!-- NEW OFFICE FORM -->
@@ -924,10 +926,10 @@ EOT;
             var color = window['color_' + name + id];
             if (total > 0 && id >= 0) {
                 if (name == 'mode') {
-                    $o.find('span.badge').html(total).css('background-color', color).css('color', '#fff').removeClass('hidden');
+                    $o.find('span.badge').html(total).css('background-color', color).css('color', '#fff').removeClass('hidden').parent().removeClass('hidden');
                 }
                 else {
-                    $o.find('span.badge').html(total).removeClass('hidden');
+                    $o.find('span.badge').html(total).removeClass('hidden').parent().removeClass('hidden');
                 }
             }
             else {
@@ -1092,6 +1094,11 @@ EOT;
         var inicio = $('#inicio_hidden').val();
         getAvailableEquipments( data['servicio_id'], fecha, inicio, autoload_equipment );
         getAvailableOffices( data['servicio_id'], fecha, inicio, autoload_office );
+
+        addClassIf($('#open_equipments_modal'), 'hidden', data['validar_equipo'] != 1);
+        addClassIf($('#open_doctors_modal'), 'hidden', data['validar_doctor'] != 1);
+        addClassIf($('#open_technicians_modal'), 'hidden', data['validar_tecnico'] != 1);
+        addClassIf($('#open_offices_modal'), 'hidden', data['validar_consultorio'] != 1);
     }
 
     function submitEquipmentFormDone($frm, data) {
@@ -2156,6 +2163,14 @@ EOT;
             e.preventDefault();
             return false;
         });
+
+        // getting equipment inf
+        /*$('#new_event_equipment_modal').find('button.modal-btn-ok').click(function() {
+            var $modal = $(this).closest('.modal');
+            var $form = $modal.find('form').eq(0);
+            submitForm( $form, submitEquipmentFormDone, null, 'GET' );
+            $modal.modal('hide');
+        });*/
 
         // getting office inf
         $('#new_event_office_modal').find('button.modal-btn-ok').click(function() {

@@ -772,6 +772,17 @@ var App = function () {
                 }
             });
         }
+        $('.select-all').click(function() {
+            var $obj = $(this);
+            var $target = $obj.siblings('select').eq(0);
+            if ($target.length) {
+                var data = [];
+                $.each($target.find('option'), function(i,o) {
+                    data[i] = $(o).val();
+                });
+                $target.select2('val', data);
+            }
+        });
     };
     var handleDatePicker = function(lang) {
     	if (typeof $.fn.pickadate != 'function') return false;
